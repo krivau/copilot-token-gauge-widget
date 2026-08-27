@@ -95,17 +95,7 @@ The session stays in `.copilot-browser-profile/` beside the script and is not
 committed. GitHub login, including MFA, happens in the browser; no cookies are
 read or exported by the widget.
 
-### 3 — Create your local `config.json`
-
-`config.json` and `local.config.json` hold machine-specific values (your GitHub
-username, absolute paths) and are **gitignored** — they are never committed,
-so the repo can safely be public.
-
-```bash
-cp config.example.json config.json
-```
-
-Then edit `config.json`:
+### 3 — Edit `config.json`
 
 ```json
 {
@@ -114,6 +104,7 @@ Then edit `config.json`:
   "api_version": "2026-03-10",
   "keychain_service": "github-copilot-widget",
   "usage_source": "browser",
+  "auto_login": false,
   "copilot_page_url": "https://github.com/settings/copilot",
   "widget_top": "40px",
   "widget_right": "40px",
@@ -128,27 +119,19 @@ Then edit `config.json`:
 | `api_version` | GitHub API version header |
 | `keychain_service` | Name of the Keychain entry created in step 2 |
 | `usage_source` | `api` for personal billing API usage, or `browser` for visible Copilot plan usage |
+| `auto_login` | When `true`, automatically opens a visible browser when the GitHub session expires |
 | `copilot_page_url` | Authenticated GitHub page that displays the Copilot allowance |
 | `widget_top` / `widget_right` | CSS position on your desktop |
 | `refresh_frequency_ms` | Refresh interval in milliseconds (default 5 min) |
 
-### 4 — Create your local widget path override
+### 4 — Update the widget path
 
-`copilot-gauge.jsx` imports `WIDGET_DIR` from `local.config.json`, which is
-also gitignored so your local macOS username/path never ends up in the repo.
-A plain JSON file is used (rather than `.js`) because Übersicht's widget
-scanner tries to parse every top-level `.js`/`.jsx` file as its own widget.
+Open `copilot-gauge.jsx` and update `WIDGET_DIR` to the absolute path of the
+folder you cloned into:
 
-```bash
-cp local.config.example.json local.config.json
-```
-
-Then edit `local.config.json`:
-
-```json
-{
-  "WIDGET_DIR": "/Users/YOUR_USER/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget"
-}
+```js
+const WIDGET_DIR =
+  "/Users/YOUR_USER/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget";
 ```
 
 Übersicht will pick up the widget automatically once it is placed in the
@@ -195,35 +178,3 @@ python3 -m pytest tests/ -v
   enterprise-managed seats are not surfaced by this endpoint.
 * `ai_credit_limit` is intentionally configurable because GitHub's flex
   allotment may vary; keep it up-to-date with your plan.
-
----
-
-## Security
-
-This repo is designed to be safe to make **public**: nothing that identifies
-you or grants access to your account is ever committed.
-
-| What | Where it lives | Committed? |
-|------|-----------------|------------|
-| GitHub Personal Access Token | macOS Keychain (`security add-generic-password`) | Never — not written to disk or source |
-| Authenticated browser session (`--login` mode) | `.copilot-browser-profile/` | Never — gitignored |
-| Your GitHub username, credit limit, widget position | `config.json` (from `config.example.json`) | Never — gitignored |
-| Absolute path to your widgets folder | `local.config.json` (from `local.config.example.json`) | Never — gitignored |
-| Python virtualenv | `.venv/` | Never — gitignored |
-
-Only the placeholder `*.example.*` files, source code, and tests are tracked
-in git.
-
-**Before you push:**
-
-* Never commit a real `config.json` or `local.config.json` — only their
-  `*.example.*` counterparts should be tracked.
-* Never paste a PAT into `config.json`, source files, or a commit message —
-  it belongs only in the Keychain.
-* Grant the PAT the minimum scope it needs (**Billing → Plan Read**, read-only,
-  no repo/org access) and rotate it if you ever suspect exposure.
-* If you ever accidentally commit a secret, treat it as compromised:
-  [revoke/rotate the token](https://github.com/settings/tokens) immediately —
-  removing the commit locally is not enough once it has been pushed.
-* Run `git status` before pushing to confirm `config.json` and
-  `local.config.json` are not staged.

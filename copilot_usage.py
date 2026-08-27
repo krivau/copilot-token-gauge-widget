@@ -24,6 +24,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -40,6 +41,7 @@ _DEFAULT_CONFIG = {
     "keychain_service": "github-copilot-widget",
     "usage_source": "api",
     "copilot_page_url": "https://github.com/settings/copilot",
+    "auto_login": False,
 }
 
 
@@ -223,7 +225,22 @@ def compute_page_stats(page_text: str, configured_limit: float) -> dict:
     )
 
 
-def get_browser_usage(page_url: str, limit: float, show_browser: bool = False) -> dict:
+def launch_login() -> None:
+    """Open a visible persistent browser for the user to complete login."""
+    subprocess.Popen(
+        [sys.executable, str(Path(__file__)), "--login"],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def get_browser_usage(
+    page_url: str,
+    limit: float,
+    show_browser: bool = False,
+    auto_login: bool = False,
+) -> dict:
     """Read visible Copilot usage from an authenticated persistent browser profile."""
     try:
         from playwright.sync_api import sync_playwright
@@ -244,9 +261,17 @@ def get_browser_usage(page_url: str, limit: float, show_browser: bool = False) -
             page.goto(page_url, wait_until="domcontentloaded")
             if "/login" in page.url:
                 if show_browser:
-                    print("Sign in to GitHub in the browser, then press Enter here.", file=sys.stderr)
-                    input()
+                    deadline = time.monotonic() + 600
+                    while "/login" in page.url and time.monotonic() < deadline:
+                        page.wait_for_timeout(1000)
+                    if "/login" in page.url:
+                        raise RuntimeError("Timed out waiting for GitHub login")
                     page.goto(page_url, wait_until="domcontentloaded")
+                elif auto_login:
+                    launch_login()
+                    raise RuntimeError(
+                        "GitHub login required. A browser was opened for sign-in."
+                    )
                 else:
                     raise RuntimeError(
                         "GitHub login is required. Run: "
@@ -280,6 +305,7 @@ def main() -> None:
                 config.get("copilot_page_url", _DEFAULT_CONFIG["copilot_page_url"]),
                 limit,
                 show_browser="--login" in sys.argv,
+                auto_login=bool(config.get("auto_login", _DEFAULT_CONFIG["auto_login"])),
             )
         elif usage_source == "api":
             token = get_token(keychain_service)

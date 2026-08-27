@@ -161,14 +161,16 @@ class TestLoadConfig:
         config = self.cu.load_config()
         assert config["ai_credit_limit"] == 1500
         assert config["keychain_service"] == "github-copilot-widget"
+        assert config["auto_login"] is False
 
     def test_overrides_from_config_file(self, tmp_path, monkeypatch):
-        cfg = {"github_user": "alice", "ai_credit_limit": 7000}
+        cfg = {"github_user": "alice", "ai_credit_limit": 7000, "auto_login": True}
         (tmp_path / "config.json").write_text(json.dumps(cfg))
         monkeypatch.setattr(self.cu, "__file__", str(tmp_path / "copilot_usage.py"))
         config = self.cu.load_config()
         assert config["github_user"] == "alice"
         assert config["ai_credit_limit"] == 7000
+        assert config["auto_login"] is True
         # defaults still present
         assert config["api_version"] == "2026-03-10"
 

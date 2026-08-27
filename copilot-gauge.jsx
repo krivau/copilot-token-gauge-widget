@@ -1,15 +1,13 @@
 import { css } from "uebersicht";
-import { WIDGET_DIR } from "./local.config.json";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-// WIDGET_DIR comes from local.config.json (gitignored — see
-// local.config.example.json). Copy that file to local.config.json and set
-// the absolute path of this widget folder before the widget will work.
-// A plain .json file is used (rather than .js) because Übersicht's widget
-// scanner tries to parse every top-level .js/.jsx file as a widget.
+// ⚠  REQUIRED: Update WIDGET_DIR to the absolute path of this widget folder
+//    before the widget will work.  Example:
+//      /Users/alice/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget
 // ---------------------------------------------------------------------------
+const WIDGET_DIR = "/Users/kristian.jensen/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget";
 const PYTHON = `${WIDGET_DIR}/../.venv/bin/python`;
 
 // The Python script is executed by Übersicht on every refresh.
@@ -64,77 +62,31 @@ const amountStyle = css`
   opacity: 0.9;
 `;
 
+const forecastStyle = css`
+  font-size: 11px;
+  margin-top: 3px;
+  color: rgba(255, 214, 10, 0.9);
+`;
+
+const paceBarStyle = css`
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+`;
+
+const paceStatusStyle = css`
+  font-size: 10px;
+  margin-top: 4px;
+  color: #30d158;
+`;
+
 const errorStyle = css`
   font-size: 12px;
   opacity: 0.7;
   padding: 8px 0;
 `;
-
-const paceBarTrack = css`
-  width: 88%;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
-  margin: 10px auto 0;
-  overflow: hidden;
-`;
-
-const paceBarFill = (color, width) => css`
-  width: ${width}%;
-  height: 100%;
-  background: ${color};
-  border-radius: 2px;
-`;
-
-const paceVerdictStyle = (color) => css`
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 6px;
-  color: ${color};
-  line-height: 1.3;
-`;
-
-const paceProjectedStyle = css`
-  font-size: 11px;
-  opacity: 0.65;
-  margin-top: 2px;
-  line-height: 1.3;
-`;
-
-// ---------------------------------------------------------------------------
-// Pace helpers
-// ---------------------------------------------------------------------------
-const PACE_COLORS = {
-  over: "#ff453a",
-  under: "#30d158",
-  on_track: "#ffd60a",
-};
-
-const PACE_VERDICTS = {
-  over: "Pacing above budget",
-  under: "Pacing below budget",
-  on_track: "On track",
-};
-
-function renderPace(pace) {
-  if (!pace) return null;
-  const color = PACE_COLORS[pace.status] || "#ffffff";
-  const verdict = PACE_VERDICTS[pace.status] || "";
-  // Bar fill = today's actual daily average usage relative to the daily budget.
-  const barWidth = Math.max(0, Math.min(100, (pace.daily_budget > 0
-    ? pace.actual_daily_average / pace.daily_budget
-    : 0) * 100));
-
-  return (
-    <div>
-      <div className={paceBarTrack}>
-        <div className={paceBarFill(color, barWidth)} />
-      </div>
-      <div className={paceVerdictStyle(color)}>{verdict}</div>
-      <div className={paceProjectedStyle}>Projected {pace.projected_total}</div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Gauge geometry
@@ -202,6 +154,17 @@ export const render = ({ output, error }) => {
   const percentage = clampPercentage(data.percentage);
   const needleAngle = GAUGE_MIN_ANGLE - (percentage / 100) * (GAUGE_MIN_ANGLE - GAUGE_MAX_ANGLE);
   const needleTip = polarToCartesian(75, 78, 46, needleAngle);
+  const pace = data.pace;
+  const projectedTotal = pace && Number(pace.projected_total);
+  const paceRatio = pace && pace.daily_budget > 0
+    ? Math.max(0, Math.min(1, pace.actual_daily_average / pace.daily_budget))
+    : 0;
+  const paceBarColor = pace && pace.status === "over" ? "#ff453a" : "#30d158";
+  const paceMessage = pace && pace.status === "over"
+    ? "Pacing above budget"
+    : pace && pace.status === "under"
+      ? "Pacing below budget"
+      : "On track";
 
   return (
     <div className={card}>
@@ -271,7 +234,31 @@ export const render = ({ output, error }) => {
         {data.used} / {data.limit}
       </div>
 
-      {renderPace(data.pace)}
+      {pace && (
+        <div>
+          <div className={paceBarStyle}>
+            <div
+              style={{
+                width: `${paceRatio * 100}%`,
+                height: "100%",
+                background: paceBarColor,
+              }}
+            />
+          </div>
+          <div className={paceStatusStyle}>{paceMessage}</div>
+          {projectedTotal !== null && Number.isFinite(projectedTotal) && (
+            <div className={forecastStyle}>
+              Projected {projectedTotal}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!pace && projectedTotal !== null && Number.isFinite(projectedTotal) && (
+        <div className={forecastStyle}>
+          Projected {projectedTotal}
+        </div>
+      )}
 
       <div className={titleStyle}>GitHub AI Credits</div>
     </div>

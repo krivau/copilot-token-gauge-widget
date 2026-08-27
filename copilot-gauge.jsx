@@ -1,12 +1,14 @@
 import { css } from "uebersicht";
-import { WIDGET_DIR } from "./local.config";
+import { WIDGET_DIR } from "./local.config.json";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-// WIDGET_DIR comes from local.config.js (gitignored — see
-// local.config.example.js). Copy that file to local.config.js and set the
-// absolute path of this widget folder before the widget will work.
+// WIDGET_DIR comes from local.config.json (gitignored — see
+// local.config.example.json). Copy that file to local.config.json and set
+// the absolute path of this widget folder before the widget will work.
+// A plain .json file is used (rather than .js) because Übersicht's widget
+// scanner tries to parse every top-level .js/.jsx file as a widget.
 // ---------------------------------------------------------------------------
 const PYTHON = `${WIDGET_DIR}/../.venv/bin/python`;
 

@@ -1,6 +1,6 @@
 # Local, machine-specific configuration — never commit real values.
 config.json
-local.config.js
+local.config.json
 
 # Authenticated browser session (cookies/local storage) used by --login mode.
 .copilot-browser-profile/

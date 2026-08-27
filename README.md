@@ -97,7 +97,7 @@ read or exported by the widget.
 
 ### 3 — Create your local `config.json`
 
-`config.json` and `local.config.js` hold machine-specific values (your GitHub
+`config.json` and `local.config.json` hold machine-specific values (your GitHub
 username, absolute paths) and are **gitignored** — they are never committed,
 so the repo can safely be public.
 
@@ -134,18 +134,21 @@ Then edit `config.json`:
 
 ### 4 — Create your local widget path override
 
-`copilot-gauge.jsx` imports `WIDGET_DIR` from `local.config.js`, which is also
-gitignored so your local macOS username/path never ends up in the repo.
+`copilot-gauge.jsx` imports `WIDGET_DIR` from `local.config.json`, which is
+also gitignored so your local macOS username/path never ends up in the repo.
+A plain JSON file is used (rather than `.js`) because Übersicht's widget
+scanner tries to parse every top-level `.js`/`.jsx` file as its own widget.
 
 ```bash
-cp local.config.example.js local.config.js
+cp local.config.example.json local.config.json
 ```
 
-Then edit `local.config.js`:
+Then edit `local.config.json`:
 
-```js
-export const WIDGET_DIR =
-  "/Users/YOUR_USER/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget";
+```json
+{
+  "WIDGET_DIR": "/Users/YOUR_USER/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget"
+}
 ```
 
 Übersicht will pick up the widget automatically once it is placed in the
@@ -205,7 +208,7 @@ you or grants access to your account is ever committed.
 | GitHub Personal Access Token | macOS Keychain (`security add-generic-password`) | Never — not written to disk or source |
 | Authenticated browser session (`--login` mode) | `.copilot-browser-profile/` | Never — gitignored |
 | Your GitHub username, credit limit, widget position | `config.json` (from `config.example.json`) | Never — gitignored |
-| Absolute path to your widgets folder | `local.config.js` (from `local.config.example.js`) | Never — gitignored |
+| Absolute path to your widgets folder | `local.config.json` (from `local.config.example.json`) | Never — gitignored |
 | Python virtualenv | `.venv/` | Never — gitignored |
 
 Only the placeholder `*.example.*` files, source code, and tests are tracked
@@ -213,7 +216,7 @@ in git.
 
 **Before you push:**
 
-* Never commit a real `config.json` or `local.config.js` — only their
+* Never commit a real `config.json` or `local.config.json` — only their
   `*.example.*` counterparts should be tracked.
 * Never paste a PAT into `config.json`, source files, or a commit message —
   it belongs only in the Keychain.
@@ -223,4 +226,4 @@ in git.
   [revoke/rotate the token](https://github.com/settings/tokens) immediately —
   removing the commit locally is not enough once it has been pushed.
 * Run `git status` before pushing to confirm `config.json` and
-  `local.config.js` are not staged.
+  `local.config.json` are not staged.

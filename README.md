@@ -5,9 +5,9 @@ Copilot AI-Credit usage and renders it as a classic half-gauge with a dial.
 
 ```
        ╭────────────╮
-  │  GGGYYYRRR │
-  │     ╱      │
-  │   54.9%    │
+       │  GGGYYYRRR │
+       │     ╱      │
+       │   54.9%    │
        │            │
        │ 823 / 1500 │
        │ AI Credits │

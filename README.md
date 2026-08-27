@@ -1,1 +1,151 @@
 # copilot-token-gauge-widget
+
+A macOS **Übersicht** desktop widget that live-tracks your monthly GitHub
+Copilot AI-Credit usage and renders it as a circular gauge chart.
+
+```
+       ╭────────────╮
+       │    ◜██◝    │
+       │   54.9%    │
+       │    USED    │
+       │            │
+       │ 823 / 1500 │
+       │ AI Credits │
+       ╰────────────╯
+```
+
+The gauge refreshes every 5 minutes, changes colour as you approach your
+limit (green → amber → red), and needs no running daemon — Übersicht handles
+everything.
+
+---
+
+## Architecture
+
+```
+GitHub Billing API
+       │
+       │  every 5 min
+       ▼
+copilot_usage.py   ← reads PAT from macOS Keychain
+       │
+       │  JSON
+       ▼
+copilot-gauge.jsx  ← Übersicht widget (SVG gauge)
+       │
+       ▼
+   macOS desktop
+```
+
+---
+
+## Prerequisites
+
+| Tool | Install |
+|------|---------|
+| [Übersicht](https://tracesof.net/uebersicht/) | `brew install --cask ubersicht` |
+| Python 3 | Ships with macOS / `brew install python` |
+
+---
+
+## Installation
+
+### 1 — Clone into your Übersicht widgets folder
+
+```bash
+cd ~/Library/Application\ Support/Übersicht/widgets
+git clone https://github.com/krivau/copilot-token-gauge-widget.git
+```
+
+### 2 — Store your GitHub PAT in the macOS Keychain
+
+Create a fine-grained Personal Access Token with **Billing → Plan Read**
+permission, then add it once:
+
+```bash
+security add-generic-password \
+  -a "$USER" \
+  -s "github-copilot-widget" \
+  -w "github_pat_YOUR_TOKEN"
+```
+
+The Python script reads the PAT at runtime; it is **never** stored in source
+code or on disk.
+
+### 3 — Edit `config.json`
+
+```json
+{
+  "github_user": "YOUR_GITHUB_USERNAME",
+  "ai_credit_limit": 1500,
+  "api_version": "2026-03-10",
+  "keychain_service": "github-copilot-widget",
+  "widget_top": "40px",
+  "widget_right": "40px",
+  "refresh_frequency_ms": 300000
+}
+```
+
+| Key | Description |
+|-----|-------------|
+| `github_user` | Your GitHub username |
+| `ai_credit_limit` | Monthly credit cap (Pro = 1 500, Pro+ = 7 000, Max = 20 000) |
+| `api_version` | GitHub API version header |
+| `keychain_service` | Name of the Keychain entry created in step 2 |
+| `widget_top` / `widget_right` | CSS position on your desktop |
+| `refresh_frequency_ms` | Refresh interval in milliseconds (default 5 min) |
+
+### 4 — Update the widget path
+
+Open `copilot-gauge.jsx` and update `WIDGET_DIR` to the absolute path of the
+folder you cloned into:
+
+```js
+const WIDGET_DIR =
+  "/Users/YOUR_USER/Library/Application Support/Übersicht/widgets/copilot-token-gauge-widget";
+```
+
+Übersicht will pick up the widget automatically once it is placed in the
+widgets folder.
+
+---
+
+## Manual test
+
+Run the Python script directly to verify your token and API access:
+
+```bash
+python3 copilot_usage.py
+```
+
+Expected output:
+
+```json
+{
+  "used": 823.4,
+  "limit": 1500,
+  "percentage": 54.9,
+  "remaining": 676.6
+}
+```
+
+---
+
+## Running the tests
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+---
+
+## Notes
+
+* This widget uses the **AI Credits** billing endpoint introduced on
+  1 June 2026.  If you are on a grandfathered annual plan that still counts
+  *premium requests*, change the URL in `copilot_usage.py` to
+  `/settings/billing/premium_request/usage`.
+* The billing API only exposes **personal** Copilot usage.  Organisation- or
+  enterprise-managed seats are not surfaced by this endpoint.
+* `ai_credit_limit` is intentionally configurable because GitHub's flex
+  allotment may vary; keep it up-to-date with your plan.

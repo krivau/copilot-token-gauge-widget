@@ -1,0 +1,9 @@
+{
+  "github_user": "YOUR_GITHUB_USERNAME",
+  "ai_credit_limit": 1500,
+  "api_version": "2026-03-10",
+  "keychain_service": "github-copilot-widget",
+  "widget_top": "40px",
+  "widget_right": "40px",
+  "refresh_frequency_ms": 300000
+}

@@ -5,9 +5,9 @@ Copilot AI-Credit usage and renders it as a classic half-gauge with a dial.
 
 ```
        ╭────────────╮
-  │  GGGYYYRRR │
-  │     ╱      │
-  │   54.9%    │
+       │  GGGYYYRRR │
+       │     ╱      │
+       │   54.9%    │
        │            │
        │ 823 / 1500 │
        │ AI Credits │
@@ -177,4 +177,3 @@ python3 -m pytest tests/ -v
 * The billing API only exposes **personal** Copilot usage.  Organisation- or
   enterprise-managed seats are not surfaced by this endpoint.
 * `ai_credit_limit` is intentionally configurable because GitHub's flex
-  allotment may vary; keep it up-to-date with your plan.

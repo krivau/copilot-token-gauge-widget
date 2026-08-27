@@ -1,0 +1,27 @@
+# Local, machine-specific configuration — never commit real values.
+config.json
+local.config.js
+
+# Authenticated browser session (cookies/local storage) used by --login mode.
+.copilot-browser-profile/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+
+# Secrets — should never live in this repo; tokens belong in the Keychain.
+*.env
+.env*
+*.pem
+*.key
+*token*.json
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

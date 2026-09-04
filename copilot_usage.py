@@ -26,6 +26,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -225,6 +226,24 @@ def compute_page_stats(page_text: str, configured_limit: float) -> dict:
     )
 
 
+_GITHUB_AUTH_PATH_MARKERS = (
+    "/login",
+    "/session",
+    "/sessions",
+    "/two_factor",
+    "/two-factor",
+    "/account_recovery",
+    "/webauthn",
+    "/sudo",
+)
+
+
+def _is_github_auth_url(url: str) -> bool:
+    """Return True if url is part of the GitHub sign-in flow (login, 2FA, etc.)."""
+    path = urllib.parse.urlparse(url).path
+    return any(marker in path for marker in _GITHUB_AUTH_PATH_MARKERS)
+
+
 def launch_login() -> None:
     """Open a visible persistent browser for the user to complete login."""
     subprocess.Popen(
@@ -259,12 +278,12 @@ def get_browser_usage(
         try:
             page = context.pages[0] if context.pages else context.new_page()
             page.goto(page_url, wait_until="domcontentloaded")
-            if "/login" in page.url:
+            if _is_github_auth_url(page.url):
                 if show_browser:
                     deadline = time.monotonic() + 600
-                    while "/login" in page.url and time.monotonic() < deadline:
+                    while _is_github_auth_url(page.url) and time.monotonic() < deadline:
                         page.wait_for_timeout(1000)
-                    if "/login" in page.url:
+                    if _is_github_auth_url(page.url):
                         raise RuntimeError("Timed out waiting for GitHub login")
                     page.goto(page_url, wait_until="domcontentloaded")
                 elif auto_login:
